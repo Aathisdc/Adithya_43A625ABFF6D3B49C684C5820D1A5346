@@ -1,0 +1,340 @@
+PYTHON PROJECT:
+ 
+EMPLOYEE MANAGEMENT SYSTEM:
+
+from tkinter import *
+from tkinter import messagebox
+import mysql.connector
+from PIL import Image, ImageTk
+
+# Connect to MySQL Database
+def connect_to_database():
+    try:
+        conn = mysql.connector.connect(
+            host="localhost",  # Your MySQL server host
+            user="root",  # Your MySQL username
+            password="root",  # Your MySQL password
+            database="employee_db"  # The name of your database
+        )
+        return conn
+    except mysql.connector.Error as err:
+        messagebox.showerror("Database Error", f"Error: {err}")
+        return None
+
+
+# Function to save employee data
+def save_employee():
+    name = e1.get()
+    email = e2.get()
+    dob = e3.get()
+    phone = e4.get()
+    address = e5.get()
+    country = e6.get()
+    doj = e7.get()
+    department = e10.get()
+    designation = e11.get()
+    salary = e12.get()
+    aadhar = e8.get()
+
+    # Gender
+    gender = "Male" if gender_var.get() == 1 else "Female"
+
+    # Languages
+    languages = []
+    if cb1_var.get() == 1:
+        languages.append("Tamil")
+    if cb2_var.get() == 1:
+        languages.append("English")
+    if cb3_var.get() == 1:
+        languages.append("Hindi")
+    languages_str = ", ".join(languages)
+
+    # Marital Status
+    marital_status = "Married" if marital_var.get() == 1 else "Unmarried"
+
+    # Validate required fields
+    if not (name and email and phone and aadhar):
+        messagebox.showwarning("Input Error", "Please fill out all required fields.")
+        return
+
+    # Save data to MySQL database
+    conn = connect_to_database()
+    if conn:
+        cursor = conn.cursor()
+        try:
+            query = """INSERT INTO employees (name, email, dob, phone, address, country, doj, department, designation, salary, aadhar, gender, languages, marital_status)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+            cursor.execute(query, (
+                name, email, dob, phone, address, country, doj, department, designation, salary, aadhar, gender,
+                languages_str, marital_status))
+            conn.commit()
+            messagebox.showinfo("Success", "Employee data has been saved.")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Database Error", f"Error: {err}")
+        finally:
+            conn.close()
+
+
+# Function to search employee by email
+def search_employee():
+    email = e2.get()
+
+    if not email:
+        messagebox.showwarning("Input Error", "Please enter an email to search.")
+        return
+
+    conn = connect_to_database()
+    if conn:
+        cursor = conn.cursor()
+        query = "SELECT * FROM employees WHERE email=%s"
+        cursor.execute(query, (email,))
+        row = cursor.fetchone()
+
+        if row:
+            e1.delete(0, END)
+            e1.insert(0, row[1])  # Name
+            e3.delete(0, END)
+            e3.insert(0, row[3])  # DOB
+            e4.delete(0, END)
+            e4.insert(0, row[4])  # Phone
+            e5.delete(0, END)
+            e5.insert(0, row[5])  # Address
+            e6.delete(0, END)
+            e6.insert(0, row[6])  # Country
+            e7.delete(0, END)
+            e7.insert(0, row[7])  # DOJ
+            e10.delete(0, END)
+            e10.insert(0, row[8])  # Department
+            e11.delete(0, END)
+            e11.insert(0, row[9])  # Designation
+            e12.delete(0, END)
+            e12.insert(0, row[10])  # Salary
+            e8.delete(0, END)
+            e8.insert(0, row[11])  # Aadhar
+            # Update gender, languages, marital status
+        else:
+            messagebox.showinfo("Result", "No employee found with that email.")
+        conn.close()
+
+
+# Function to update employee
+def update_employee():
+    email = e2.get()
+
+    if not email:
+        messagebox.showwarning("Input Error", "Please search for an employee first.")
+        return
+
+    # Capture updated data
+    name = e1.get()
+    dob = e3.get()
+    phone = e4.get()
+    address = e5.get()
+    country = e6.get()
+    doj = e7.get()
+    department = e10.get()
+    designation = e11.get()
+    salary = e12.get()
+    aadhar = e8.get()
+    gender = "Male" if gender_var.get() == 1 else "Female"
+    languages = []
+    if cb1_var.get() == 1:
+        languages.append("Tamil")
+    if cb2_var.get() == 1:
+        languages.append("English")
+    if cb3_var.get() == 1:
+        languages.append("Hindi")
+    languages_str = ", ".join(languages)
+    marital_status = "Married" if marital_var.get() == 1 else "Unmarried"
+
+    # Update data in database
+    conn = connect_to_database()
+    if conn:
+        cursor = conn.cursor()
+        query = """UPDATE employees SET name=%s, dob=%s, phone=%s, address=%s, country=%s, doj=%s, department=%s, 
+                   designation=%s, salary=%s, aadhar=%s, gender=%s, languages=%s, marital_status=%s WHERE email=%s"""
+        cursor.execute(query, (
+            name, dob, phone, address, country, doj, department, designation, salary, aadhar, gender, languages_str,
+            marital_status, email))
+        conn.commit()
+        messagebox.showinfo("Success", "Employee data has been updated.")
+        conn.close()
+
+
+# Function to delete employee
+def delete_employee():
+    email = e2.get()
+
+    if not email:
+        messagebox.showwarning("Input Error", "Please enter an email to delete.")
+        return
+
+    conn = connect_to_database()
+    if conn:
+        cursor = conn.cursor()
+        query = "DELETE FROM employees WHERE email=%s"
+        cursor.execute(query, (email,))
+        conn.commit()
+        messagebox.showinfo("Success", "Employee record deleted.")
+        conn.close()
+
+
+# Tkinter GUI setup
+top = Tk()
+top.geometry("1500x550")
+c=Canvas(top,bg="lightblue",height="1500",width="1500")
+c.pack()
+# Employee Information Form
+labelframe = LabelFrame(top, text="Employee Information")
+labelframe.pack(fill="both", expand="yes")
+labelframe1 = Label(labelframe, text="EMPLOYEE MANAGEMENT SYSTEM", width="700", fg="blue")
+labelframe1.pack()
+
+# Form fields
+lbl1 = Label(top, text="Name", font=("Times new roman", 12), bg="sky blue").place(x=10, y=60)
+e1 = Entry(top)
+e1.place(x=100, y=60, height="22")
+
+lbl2 = Label(top, text="Email", font=("Times new roman", 12), bg="sky blue").place(x=10, y=100)
+e2 = Entry(top)
+e2.place(x=100, y=100, height="22")
+
+lbl3 = Label(top, text="DOB", font=("Times new roman", 12), bg="sky blue").place(x=10, y=140)
+e3 = Entry(top)
+e3.place(x=100, y=140, height="22")
+
+lbl4 = Label(top, text="Phone no", font=("Times new roman", 12), bg="sky blue").place(x=10, y=180)
+e4 = Entry(top)
+e4.place(x=100, y=180, height="22")
+
+lbl5 = Label(top, text="Address", font=("Times new roman", 12), bg="sky blue").place(x=10, y=220)
+e5 = Entry(top)
+e5.place(x=100, y=220, height="40")
+
+lbl6 = Label(top, text="Country", font=("Times new roman", 12), bg="sky blue").place(x=10, y=280)
+e6 = Entry(top)
+e6.place(x=100, y=280, height="22")
+
+lbl7 = Label(top, text="DOJ", font=("Times new roman", 12), bg="sky blue").place(x=10, y=320)
+e7 = Entry(top)
+e7.place(x=100, y=320, height="22")
+
+lbl10 = Label(top, text="Department", font=("Times new roman", 12), bg="sky blue").place(x=300, y=60)
+e10 = Entry(top)
+e10.place(x=420, y=60, height="22")
+
+lbl11 = Label(top, text="Designation", font=("Times new roman", 12), bg="sky blue").place(x=300, y=100)
+e11 = Entry(top)
+e11.place(x=420, y=100, height="22")
+
+lbl12 = Label(top, text="Salary(CTC)", font=("Times new roman", 12), bg="sky blue").place(x=300, y=140)
+e12 = Entry(top)
+e12.place(x=420, y=140, height="22")
+
+lbl8 = Label(top, text="Aadhar no", font=("Times new roman", 12), bg="sky blue").place(x=300, y=320)
+e8 = Entry(top)
+e8.place(x=420, y=320, height="22")
+
+# Gender Radiobuttons
+l=Label(top,text="Gender",bg="sky blue",font=("Times new roman", 11))
+l.place(x=300,y=180)
+gender_var = IntVar()
+r1 = Radiobutton(top, text="Male", variable=gender_var, value=1)
+r1.place(x=420, y=180)
+r2 = Radiobutton(top, text="Female", variable=gender_var, value=0)
+r2.place(x=480, y=180)
+
+# Language Checkboxes
+l=Label(top,text="Languages",bg="sky blue",font=("Times new roman", 11))
+l.place(x=300,y=230)
+cb1_var = IntVar()
+cb1 = Checkbutton(top, text="Tamil", variable=cb1_var)
+cb1.place(x=420, y=230)
+
+cb2_var = IntVar()
+cb2 = Checkbutton(top, text="English", variable=cb2_var)
+cb2.place(x=480, y=230)
+
+cb3_var = IntVar()
+cb3 = Checkbutton(top, text="Hindi", variable=cb3_var)
+cb3.place(x=550, y=230)
+
+# Marital Status
+l=Label(top,text="Marital status",bg="sky blue",font=("Times new roman", 11))
+l.place(x=300,y=280)
+marital_var = IntVar()
+sdc = Menubutton(top, text="Select Status", relief=FLAT)
+sdc.menu = Menu(sdc)
+sdc["menu"] = sdc.menu
+sdc.menu.add_checkbutton(label="Married", variable=marital_var)
+sdc.menu.add_checkbutton(label="Un Married", variable=marital_var)
+sdc.place(x=420, y=280)
+
+# Form fields (same as before)
+
+# Buttons for save, search, update, and delete
+b1 = Button(top, text="SAVE", font=("Times new roman", 11), bg="blue", fg="white", command=save_employee)
+b1.place(x=1160, y=80, height="30", width="70")
+
+b2 = Button(top, text="SEARCH", font=("Times new roman", 11), bg="blue", fg="white", command=search_employee)
+b2.place(x=1160, y=120, height="30", width="70")
+
+b3 = Button(top, text="UPDATE", font=("Times new roman", 11), bg="blue", fg="white", command=update_employee)
+b3.place(x=1160, y=160, height="30", width="70")
+
+b4 = Button(top, text="DELETE", font=("Times new roman", 11), bg="red", fg="white", command=delete_employee)
+b4.place(x=1160, y=200, height="30", width="70")
+#images
+
+
+
+# Create a Tkinter window
+
+# Desired dimensions for the image
+label_width = 300
+label_height = 200
+
+# Load the image
+image_path =r"C:\Users\Admin\Downloads\cadpoint kumbakonam logo (1).png"
+image = Image.open(image_path)
+
+# Resize the image to fit the desired dimensions
+image = image.resize((label_width, label_height), Image.LANCZOS)
+
+# Create a PhotoImage object
+photo = ImageTk.PhotoImage(image)
+
+# Create a Label widget to display the image
+image_label = Label(top, image=photo)
+image_label.place(x=700,y=90)
+
+l=Label(top,text="***PYTHON PADI JOB READY***",font=("Times new roman", 50))
+l.place(x=200,y=450)
+top.mainloop()
+
+
+sql content:
+
+CREATE DATABASE employee_db;
+drop database employee_db;
+USE employee_db;
+drop table employees;
+CREATE TABLE employees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    dob DATE,
+    phone VARCHAR(15),
+    address VARCHAR(255),
+    country VARCHAR(100),
+    doj DATE,
+    department VARCHAR(100),
+    designation VARCHAR(100),
+    salary FLOAT,
+    aadhar VARCHAR(20),
+    gender VARCHAR(10),
+    languages VARCHAR(100),
+    marital_status VARCHAR(20)
+);
+
+select * from employees;
